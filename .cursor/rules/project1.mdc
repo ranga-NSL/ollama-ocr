@@ -1,0 +1,29 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+ I am using my windows11 workstation with 32GB RAM , 4060Ti *GB Nvidia GPU and cuda121
+ be carefull not to mix unix commands in windows environment of mine
+Remember the Windows console can't display the emojis 
+
+# CSS/JS Development Context
+- Follow modern web standards (ES6+, CSS Grid/Flexbox).
+- Ensure cross-browser compatibility.
+- Apply responsive design principles.
+- Optimize performance (minification, bundling).
+- Adhere to accessibility standards (WCAG compliance).
+
+# Project-Specific
+- Follow multi-agent system architecture patterns.
+- Adhere to MCP (Model Context Protocol) implementation standards.
+- Use API integration best practices.
+- Implement robust error handling and logging strategies.
+- Use appropriate testing frameworks and approaches.
+
+# Development Workflow
+- Maintain code organization and modularity.
+- Follow documentation standards.
+- Apply version control best practices.
+- Use effective debugging tools and techniques.
+ 
