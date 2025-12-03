@@ -23,6 +23,7 @@ ollama-ocr/
 ├── ollama_cloud_ocr.py             # Cloud OCR (Ollama Cloud API)
 ├── test_ollama_search.py           # List/search/test installed Ollama models
 ├── ollama_cloud_model.py           # Minimal Cloud API connectivity test
+├── test_mistral_cloud.py           # Mistral Cloud Model test (reasoning + vision)
 ├── requirements.txt                # Python dependencies (default)
 └── requirements_313_GPU.txt        # Optional pinned deps for Py 3.13 + GPU
 ```
@@ -89,6 +90,48 @@ python ollama_cloud_ocr.py
 python ollama_cloud_ocr.py "images/handwriting.jpg" --model "qwen3-vl:235b-cloud"
 ```
 
+### Mistral Cloud Model (Vision + Reasoning)
+The `mistral-large-3:675b-cloud` model provides both vision/OCR capabilities and advanced reasoning. It's ideal for complex document analysis that requires understanding context, logical reasoning, and text extraction.
+
+**Prerequisites:**
+- `OLLAMA_API_KEY` environment variable set
+- Access to Ollama Cloud API
+
+**Text Reasoning Tests:**
+```powershell
+# Windows (PowerShell)
+$env:OLLAMA_API_KEY = "<your-key>"
+
+# Run all tests (reasoning + vision/OCR)
+python test_mistral_cloud.py
+
+# Text reasoning only
+python test_mistral_cloud.py --reasoning-only
+
+# Vision/OCR only
+python test_mistral_cloud.py --vision-only
+```
+
+**Vision/OCR with Mistral:**
+```powershell
+# Use Mistral for OCR with existing cloud OCR script
+python ollama_cloud_ocr.py "images/handwriting.jpg" --model "mistral-large-3:675b-cloud"
+
+# Document analysis mode
+python ollama_cloud_ocr.py "images/trader-joes-receipt.jpg" --model "mistral-large-3:675b-cloud" --mode document
+
+# Structured data extraction (receipts, forms)
+python ollama_cloud_ocr.py "images/trader-joes-receipt.jpg" --model "mistral-large-3:675b-cloud" --mode structured --data-type receipt
+```
+
+**Capabilities:**
+- **Text Reasoning**: Mathematical problems, logical reasoning, technical explanations
+- **Vision/OCR**: Text extraction from images, document analysis, handwriting transcription
+- **Structured Data**: Extract structured information from receipts, forms, and documents
+- **Multi-step Analysis**: Comprehensive document understanding with context
+
+The test script (`test_mistral_cloud.py`) automatically uses images from the `images/` subdirectory and tests both reasoning and vision capabilities.
+
 ### Printed OCR (Recommended for typeset documents)
 ```bash
 # Single image (preprocess + Tesseract)
@@ -132,6 +175,9 @@ python test_ollama_search.py llama3.2-vision:latest
 
 # Verify Cloud connectivity (requires OLLAMA_API_KEY)
 python ollama_cloud_model.py
+
+# Test Mistral Cloud Model (reasoning + vision/OCR)
+python test_mistral_cloud.py
 ```
 
 ### Surya OCR (Good for Printed Text)
@@ -217,6 +263,7 @@ LLM-based OCR: ⭐⭐⭐⭐ (Very Good)
 ### Models Used
 - Local: **llama3.2-vision:latest** (primary vision model used here)
 - Cloud (example): **qwen3-vl:235b-cloud** (vision-language model)
+- Cloud (advanced): **mistral-large-3:675b-cloud** (vision + reasoning model)
 
 ### Performance Considerations
 - **GPU Acceleration**: Recommended for LLM-based OCR

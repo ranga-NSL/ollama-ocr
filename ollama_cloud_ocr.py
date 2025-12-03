@@ -11,6 +11,7 @@ if sys.platform == 'win32':
 
 # Recommended vision/OCR-capable cloud models
 CLOUD_VISION_MODELS = [
+    'mistral-large-3:675b-cloud',  # Vision and reasoning model (OCR capable)
     'qwen3-vl:235b-cloud',  # Vision-language model (OCR capable)
     'minimax-m2:cloud',     # Cloud LLM (may be text-only)
     'gpt-oss:120b-cloud'    # Cloud LLM (may be text-only)
@@ -38,7 +39,7 @@ class CloudOCRAnalyzer:
         self.model = model or CLOUD_VISION_MODELS[0]
         
         # Warn if using a non-vision model
-        if '-vl' not in model.lower() and 'vision' not in model.lower():
+        if '-vl' not in model.lower() and 'vision' not in model.lower() and 'mistral' not in model.lower():
             print(f"[WARNING] Model '{model}' may not support vision/OCR capabilities.")
             print(f"         Recommended vision models: {', '.join(CLOUD_VISION_MODELS[:2])}")
         
