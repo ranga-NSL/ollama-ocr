@@ -797,8 +797,16 @@ if __name__ == "__main__":
             outdir = Path(args.outdir)
             outdir.mkdir(parents=True, exist_ok=True)
             
-            # CSV summary file (if requested)
+            analyzer = CloudOCRAnalyzer(model=selected_model)
+            files = analyzer._collect_project_images()
+            
+            if not files:
+                print("No images or PDFs found in the project's 'images' directory.")
+                sys.exit(0)
+            
+            # CSV summary file (if requested) - open after confirming files exist
             csv_file = None
+            csv_f = None
             csv_writer = None
             if args.csv:
                 import csv
@@ -806,13 +814,6 @@ if __name__ == "__main__":
                 csv_f = csv_file.open('w', newline='', encoding='utf-8')
                 csv_writer = csv.writer(csv_f)
                 csv_writer.writerow(['file', 'mode', 'model', 'chars', 'pages', 'type'])
-            
-            analyzer = CloudOCRAnalyzer(model=selected_model)
-            files = analyzer._collect_project_images()
-            
-            if not files:
-                print("No images or PDFs found in the project's 'images' directory.")
-                sys.exit(0)
             
             print(f"\n{'='*60}")
             print(f"Model: {selected_model}")
@@ -883,10 +884,7 @@ if __name__ == "__main__":
                     combined_text = ''.join(all_page_texts).strip()
                     
                     # Write output file
-                    if is_pdf:
-                        out_file = outdir / f"{file_stem}.pdf.{args.mode}.txt"
-                    else:
-                        out_file = outdir / f"{file_stem}.{args.mode}.txt"
+                    out_file = outdir / f"LLM_{file_stem}.txt"
                     
                     out_file.write_text(combined_text, encoding='utf-8')
                     

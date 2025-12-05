@@ -4,321 +4,233 @@ This project compares different OCR (Optical Character Recognition) technologies
 
 ## 🎯 Project Overview
 
-The project implements and tests three different OCR approaches:
-- **LLM-based OCR** (Ollama with vision models)
-- **Traditional OCR** (PyTesseract)
-- **Modern OCR** (Surya OCR)
+The project provides three OCR solutions:
+- **Traditional OCR** (`ocr_router.py`): Tesseract for printed text + TrOCR for handwriting
+- **Cloud OCR** (`ollama_cloud_ocr.py`): Cloud-hosted vision models via Ollama Cloud API
+- **Local OCR** (`ollama_local_ocr.py`): Local Ollama vision models (requires Ollama running locally)
 
 ## 📁 Project Structure
 
 ```
 ollama-ocr/
-├── images/                          # Test images
-│   ├── handwriting.jpg              # Handwritten text
-│   ├── trader-joes-receipt.jpg      # Receipt with columns
-│   ├── test_notes.jpg               # Technical notes
-│   └── test_dwg.jpg                 # Technical drawing
-├── ocr_router.py                   # Unified OCR router (Tesseract + TrOCR, images + PDFs)
-├── advanced_ocr.py                  # Local LLM OCR (multi-capability demo)
-├── ollama_local_ocr.py             # Local OCR (crisp, deterministic options)
-├── ollama_cloud_ocr.py             # Cloud OCR (Ollama Cloud API)
-├── test_ollama_search.py           # List/search/test installed Ollama models
-└── requirements.txt                # Python dependencies
+├── images/                    # Test images and PDFs
+├── outputs/                   # Output directory (created automatically)
+├── ocr_router.py             # Traditional OCR (Tesseract + TrOCR, images + PDFs)
+├── ollama_cloud_ocr.py       # Cloud OCR (Ollama Cloud API, images + PDFs)
+├── ollama_local_ocr.py       # Local LLM OCR (images only, requires local Ollama)
+└── requirements.txt           # Python dependencies
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.12+
-- Ollama installed and running
-- CUDA 12.1 (for GPU acceleration)
+- Tesseract OCR binary (for `ocr_router.py`)
+- `OLLAMA_API_KEY` environment variable (for `ollama_cloud_ocr.py`)
+- Ollama installed and running locally (for `ollama_local_ocr.py`)
 
 ### Setup
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd ollama-ocr
-   ```
-
-2. **Create virtual environment**
+1. **Create virtual environment**
    ```bash
    python -m venv ollama-ocr_env
    .\ollama-ocr_env\Scripts\activate  # Windows
    ```
 
-3. **Install dependencies**
+2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Install Ollama models**
-   ```bash
-   ollama pull llama3.2-vision:latest
-   ollama pull minicpm-v:latest
-   ```
+3. **Install Tesseract** (Windows)
+   - Download from: https://github.com/UB-Mannheim/tesseract/wiki
+   - Ensure it's on PATH or set `pytesseract.pytesseract.tesseract_cmd`
 
 ## 🔧 Usage
 
-### LLM-based OCR (Local - Recommended for Handwriting)
-```bash
-# Process all test images
-python advanced_ocr.py
+### Traditional OCR (`ocr_router.py`)
 
-# Process specific image
-python advanced_ocr.py "images/handwriting.jpg"
-```
-
-### Local OCR (Crisp, deterministic)
-```bash
-# Batch over images directory
-python ollama_local_ocr.py --temperature 0.0 --seed 1
-
-# Single image
-python ollama_local_ocr.py "images/handwriting.jpg" --temperature 0.0 --seed 1
-```
-
-### Cloud OCR (Ollama Cloud)
-Requires `OLLAMA_API_KEY` and a vision-capable cloud model (e.g., `qwen3-vl:235b-cloud`).
-```powershell
-# Windows (PowerShell)
-$env:OLLAMA_API_KEY = "<your-key>"
-python ollama_cloud_ocr.py
-
-# Single image with explicit model
-python ollama_cloud_ocr.py "images/handwriting.jpg" --model "qwen3-vl:235b-cloud"
-```
-
-### Cloud OCR with Advanced Models
-The `ollama_cloud_ocr.py` supports various cloud models including `mistral-large-3:675b-cloud` which provides both vision/OCR capabilities and advanced reasoning.
-
-**Prerequisites:**
-- `OLLAMA_API_KEY` environment variable set
-- Access to Ollama Cloud API
-
-**Usage Examples:**
-```powershell
-# Windows (PowerShell)
-$env:OLLAMA_API_KEY = "<your-key>"
-
-# Use Mistral for OCR
-python ollama_cloud_ocr.py "images/handwriting.jpg" --model "mistral-large-3:675b-cloud"
-
-# Document analysis mode
-python ollama_cloud_ocr.py "images/trader-joes-receipt.jpg" --model "mistral-large-3:675b-cloud" --mode document
-
-# Structured data extraction (receipts, forms)
-python ollama_cloud_ocr.py "images/trader-joes-receipt.jpg" --model "mistral-large-3:675b-cloud" --mode structured --data-type receipt
-
-# Process PDF files
-python ollama_cloud_ocr.py "document.pdf" --model "mistral-large-3:675b-cloud"
-
-# Process specific PDF page
-python ollama_cloud_ocr.py "document.pdf" --page 1 --model "mistral-large-3:675b-cloud"
-```
-
-**Available Modes:**
-- `text`: Basic text extraction
-- `handwriting`: Specialized handwriting transcription
-- `structured`: Extract structured data (receipts, forms, price tags)
-- `document`: Comprehensive document analysis
-- `multi`: Multi-step analysis (description, text extraction, object identification)
-
-### Unified OCR Router (Recommended - Tesseract + TrOCR)
-The `ocr_router.py` is a unified program that handles both images and PDFs, automatically routing to the best OCR engine (Tesseract for printed text, TrOCR for handwriting).
+Unified program that automatically routes to the best OCR engine:
+- **Tesseract** for printed text (receipts, forms, documents)
+- **TrOCR** for handwriting
 
 **Features:**
 - Supports images (`.jpg`, `.jpeg`, `.png`, `.bmp`, `.tiff`, `.webp`) and PDFs (`.pdf`)
 - Auto-detection: automatically chooses printed vs handwriting OCR
-- PDF support: converts PDF pages to images and processes each page
-- No LLM dependencies: uses traditional OCR engines only
+- No API keys required
+- Output files: `OCR_{filename}.txt`
 
 ```bash
 # Single image - auto-detect engine
 python ocr_router.py "images/handwriting.jpg"
 
-# Single PDF - processes all pages with page separators
+# Single PDF - processes all pages
 python ocr_router.py "document.pdf"
 
 # Force a specific engine
 python ocr_router.py "images/test_notes.jpg" --engine printed
 python ocr_router.py "images/handwriting.jpg" --engine handwriting
 
-# Batch mode - processes all images and PDFs in images/ directory
+# Batch mode - processes all files in images/ directory
 python ocr_router.py
 
-# Specify output directory
-python ocr_router.py --outdir my_outputs
+# Batch mode with CSV summary and custom output directory
+python ocr_router.py --outdir my_outputs --csv
 ```
 
-### Batch Runner (summary CSV)
-```bash
-# Process all images and write outputs + summary.csv
-python run_all_ocr.py
-```
+**Arguments:**
+- `file_path` (optional): Single file to process; if omitted, processes all files in `images/` directory
+- `--engine`: `auto` (default), `printed`, or `handwriting`
+- `--outdir`: Output directory (default: `outputs`, batch mode only)
+- `--csv`: Generate CSV summary file (batch mode only)
 
-### Model Discovery / Sanity Checks
+### Cloud OCR (`ollama_cloud_ocr.py`)
+
+Cloud-hosted vision models with multiple analysis modes.
+
+**Features:**
+- Multiple OCR modes: text, handwriting, structured, document, multi-step
+- PDF support with per-page processing
+- Advanced models: `mistral-large-3:675b-cloud`, `qwen3-vl:235b-cloud`
+- Output files: `LLM_{filename}.txt`
+- Requires `OLLAMA_API_KEY` environment variable
+
 ```powershell
-# List installed models, find vision candidates, and test connectivity
-python test_ollama_search.py
+# Windows (PowerShell)
+$env:OLLAMA_API_KEY = "<your-key>"
 
-# Inspect a specific model and test it
-python test_ollama_search.py llama3.2-vision:latest
+# Batch mode - processes all files in images/ directory
+python ollama_cloud_ocr.py
+
+# Batch mode with CSV summary
+python ollama_cloud_ocr.py --csv
+
+# Single image
+python ollama_cloud_ocr.py "images/handwriting.jpg"
+
+# Specific mode and model
+python ollama_cloud_ocr.py "images/receipt.jpg" --mode structured --data-type receipt --model "mistral-large-3:675b-cloud"
+
+# PDF processing (specific page)
+python ollama_cloud_ocr.py "document.pdf" --page 1
+
+# Custom output directory (batch mode only)
+python ollama_cloud_ocr.py --outdir my_outputs --csv
 ```
 
-### Surya OCR (Good for Printed Text)
+**Arguments:**
+- `file_path` (optional): Single file to process; if omitted, processes all files in `images/` directory
+- `--model`: Cloud model to use (default: `mistral-large-3:675b-cloud`)
+- `--mode`: `text` (default), `handwriting`, `structured`, `document`, or `multi`
+- `--data-type`: `receipt`, `form`, or `price_tag` (for structured mode)
+- `--page`: Page number for PDFs (1-indexed, processes all pages if omitted)
+- `--stream`: Stream the response
+- `--show-timing`: Display performance timing metrics
+- `--outdir`: Output directory (default: `outputs`, batch mode only)
+- `--csv`: Generate CSV summary file (batch mode only)
+
+### Local OCR (`ollama_local_ocr.py`)
+
+Local Ollama vision models (requires Ollama running locally).
+
+**Features:**
+- Images only (no PDF support)
+- GPU usage monitoring
+- Deterministic outputs with temperature/seed control
+- No API keys required
+
 ```bash
-# Process specific image
-python test_SuryaOCR.py "images/trader-joes-receipt.jpg"
+# Single image
+python ollama_local_ocr.py "images/handwriting.jpg"
+
+# Batch mode - processes all images in images/ directory
+python ollama_local_ocr.py
+
+# Deterministic output
+python ollama_local_ocr.py "images/handwriting.jpg" --temperature 0.0 --seed 1
+
+# Custom model and context window
+python ollama_local_ocr.py "images/handwriting.jpg" --model "llama3.2-vision:latest" --num-ctx 2048
+
+# Performance profiling
+python ollama_local_ocr.py "images/handwriting.jpg" --profile --show-timing
 ```
 
-### PyTesseract (Best for Printed Text with Layout)
-```bash
-# Process specific image
-python test_pytesseract.py "images/trader-joes-receipt.jpg"
+**Arguments:**
+- `image_path` (optional): Single image to process; if omitted, processes all images in `images/` directory
+- `--model`: Ollama model to use (default: `llama3.2-vision:latest`)
+- `--temperature`: Sampling temperature (default: 0.1, lower = more deterministic)
+- `--seed`: Random seed for determinism (default: 1)
+- `--num-ctx`: Context window size (smaller = less GPU memory)
+- `--no-check-gpu`: Disable GPU usage check
+- `--show-timing`: Show detailed timing information
+- `--profile`: Enable detailed performance profiling
+
+## 📁 Output Files
+
+### File Naming
+- **Traditional OCR**: `OCR_{filename}.txt` (e.g., `OCR_handwriting.txt`, `OCR_playbook_1.txt`)
+- **Cloud OCR**: `LLM_{filename}.txt` (e.g., `LLM_handwriting.txt`, `LLM_playbook_1.txt`)
+- **Local OCR**: No file output (console only)
+
+### Output Directory
 ```
+outputs/
+├── OCR_handwriting.txt          # Traditional OCR output
+├── OCR_playbook_1.txt           # Traditional OCR output (PDF)
+├── LLM_handwriting.txt          # Cloud OCR output
+├── LLM_playbook_1.txt           # Cloud OCR output (PDF)
+└── summary.csv                   # CSV summary (if --csv flag used in batch mode)
+```
+
+### CSV Summary
+When using `--csv` flag in batch mode:
+- **Traditional OCR**: `file`, `engine`, `chars`, `pages`, `type`
+- **Cloud OCR**: `file`, `mode`, `model`, `chars`, `pages`, `type`
 
 ## 📊 OCR Technology Comparison
 
 | Technology | Best For | Strengths | Limitations |
 |------------|----------|-----------|-------------|
-| **LLM-based (Ollama)** | Handwriting, Complex layouts | Excellent handwriting recognition, Context understanding | Slower processing, Requires GPU/API key |
-| **TrOCR** | Handwriting | Good handwriting recognition, GPU-accelerated | Requires GPU, Slower than Tesseract |
-| **Tesseract (PyTesseract)** | Printed text, Line detection | Fast, Reliable for printed text, Good line detection | Poor handwriting recognition |
-| **Surya OCR** | Multilingual, Modern documents | Good accuracy, Layout detection | Column reading issues, Complex setup |
+| **Tesseract** | Printed text | Fast, reliable, good line detection | Poor handwriting recognition |
+| **TrOCR** | Handwriting | Good handwriting recognition, GPU-accelerated | Requires GPU, slower than Tesseract |
+| **LLM-based (Cloud)** | Handwriting, Complex layouts | Excellent handwriting, context understanding | Requires API key, slower processing |
+| **LLM-based (Local)** | Handwriting | Good handwriting, no API key needed | Requires local Ollama, slower processing |
 
-## 🎯 Key Findings & Recommendations
+## 🎯 Recommendations
 
-### 📝 Handwriting Recognition
-- **✅ LLM-based OCR (Ollama)** - **BEST CHOICE** (Cloud/Local)
-  - Excellent at understanding cursive and script handwriting
-  - Context-aware text interpretation
-  - Handles various handwriting styles effectively
-- **✅ TrOCR** - **GOOD CHOICE** (Local, no API key needed)
-  - Good handwriting recognition
-  - GPU-accelerated
-  - Available in `ocr_router.py` with auto-detection
-
-### 📄 Printed Text Recognition
-- **✅ Tesseract (PyTesseract)** - **BEST CHOICE**
-  - Superior line detection and column handling
-  - Fast processing for printed documents
-  - Excellent at maintaining text structure and layout
-  - Reliable for receipts, forms, and structured documents
-  - Available in `ocr_router.py` with auto-detection
-
-### 🏢 Complex Documents
-- **⚠️ Surya OCR** - **MIXED RESULTS**
-  - Good text detection but struggles with column layouts
-  - Tends to read left-to-right across columns instead of column-wise
-  - Better for single-column documents
-
-## 🔍 Detailed Analysis
-
-### Handwriting Performance
-```
-LLM-based OCR: ⭐⭐⭐⭐⭐ (Excellent)
-- Accurately transcribes cursive writing
-- Understands context and formatting
-- Handles various handwriting styles
-
-TrOCR: ⭐⭐⭐⭐ (Very Good)
-- Good handwriting recognition
-- Better than Tesseract for cursive/script
-- GPU-accelerated
-
-Tesseract (PyTesseract): ⭐⭐ (Poor)
-- Struggles with cursive text
-- Produces garbled output for handwriting
-- Low confidence scores
-
-Surya OCR: ⭐⭐⭐ (Good)
-- Better than Tesseract for handwriting
-- But still struggles with complex scripts
-```
-
-### Printed Text Performance
-```
-Tesseract (PyTesseract): ⭐⭐⭐⭐⭐ (Excellent)
-- Perfect line detection
-- Maintains column structure
-- Fast and reliable
-
-LLM-based OCR: ⭐⭐⭐⭐ (Very Good)
-- Good accuracy but slower
-- Better for complex layouts
-- Context understanding helps
-
-Surya OCR: ⭐⭐⭐ (Good)
-- Good text detection
-- Issues with column reading
-- Reads across columns instead of within columns
-```
+- **For handwriting**: Use `ocr_router.py` (TrOCR) or `ollama_cloud_ocr.py` (LLM)
+- **For printed text**: Use `ocr_router.py` (Tesseract) - auto-detected
+- **For unified solution**: Use `ocr_router.py` - automatically routes to best engine, supports images and PDFs
+- **For advanced analysis**: Use `ollama_cloud_ocr.py` with structured/document modes
+- **For local processing**: Use `ollama_local_ocr.py` - no API key, but requires local Ollama
 
 ## 🛠️ Technical Details
 
 ### OCR Engines
-- **Tesseract (PyTesseract)**: Traditional OCR for printed text, included in `ocr_router.py`
-- **TrOCR**: Transformer-based OCR for handwriting, included in `ocr_router.py`
-- **LLM-based (Ollama Local)**: Vision models for advanced OCR, see `ollama_local_ocr.py` and `advanced_ocr.py`
-- **LLM-based (Ollama Cloud)**: Cloud-hosted vision models, see `ollama_cloud_ocr.py`
+- **Tesseract (PyTesseract)**: Traditional OCR for printed text
+- **TrOCR**: Transformer-based OCR for handwriting (`microsoft/trocr-base-handwritten`)
+- **LLM-based (Ollama Cloud)**: Cloud-hosted vision models
+- **LLM-based (Ollama Local)**: Local vision models (requires Ollama running)
 
-### Models Used
-- Local LLM: **llama3.2-vision:latest** (primary vision model used here)
-- Cloud (example): **qwen3-vl:235b-cloud** (vision-language model)
-- Cloud (advanced): **mistral-large-3:675b-cloud** (vision + reasoning model)
-- TrOCR: **microsoft/trocr-base-handwritten** (handwriting model)
+### Models
+- **TrOCR**: `microsoft/trocr-base-handwritten` (handwriting model)
+- **Cloud**: `mistral-large-3:675b-cloud` (default, vision + reasoning), `qwen3-vl:235b-cloud` (vision-language)
+- **Local**: `llama3.2-vision:latest` (default)
 
-### Performance Considerations
-- **GPU Acceleration**: Recommended for LLM-based OCR and TrOCR
+### Performance
 - **Processing Time**: Tesseract < TrOCR < LLM-based
-- **Accuracy**: Depends on document type (see comparison above)
-- **Determinism** (local): Use `--temperature 0.0 --seed 1` in `ollama_local_ocr.py` for stable outputs
-- **Handwriting**: TrOCR provides higher accuracy than Tesseract for cursive/script handwriting ([source](https://www.handwritingocr.com/handwriting-to-text/how-to-convert-handwriting-to-text-using-python))
-- **PDF Support**: Both `ocr_router.py` and `ollama_cloud_ocr.py` support PDF files (requires `pdf2image`)
-
-## 📈 Output Examples
-
-### Receipt Processing
-**PyTesseract Output:**
-```
-SOUR CREAM & ONION CORN: $2.49
-SLICED WHOLE WHEAT BREAD: $2.49
-RICE CAKES KOREAN TTEOK: $3.99
-```
-
-**Surya OCR Output:**
-```
-SOUR CREAM & ONION CORN<br>SLICED WHOLE WHEAT BREAD<br>RICE CAKES KOREAN TTEOK
-$2.49<br>$2.49<br>$3.99
-```
+- **GPU Acceleration**: Recommended for TrOCR and local LLM OCR
+- **PDF Support**: `ocr_router.py` and `ollama_cloud_ocr.py` support PDFs (requires `pdf2image`)
 
 ## 🔧 Troubleshooting
 
-### Common Issues
-1. **Ollama not running**: Start Ollama service before running LLM-based OCR
-2. **Model not found**: Pull required models with `ollama pull <model-name>`
-3. **CUDA errors**: Ensure CUDA 12.1 is properly installed
-4. **Import errors**: Activate virtual environment and install dependencies
-5. **Cloud 500/400 errors**: Ensure you pass a valid `OLLAMA_API_KEY` and use a vision-capable cloud model. The program encodes images appropriately; verify the image path exists.
-6. **Tesseract not found**: Install the Tesseract binary and ensure it’s on PATH; on Windows, use the official installer. You can also set `pytesseract.pytesseract.tesseract_cmd` to the full path.
-
-### Performance Optimization
-- Use GPU acceleration for LLM-based OCR
-- Preprocess images for better PyTesseract results
-- Adjust confidence thresholds based on document quality
+1. **Tesseract not found**: Install Tesseract binary and ensure it's on PATH
+2. **Cloud API errors**: Verify `OLLAMA_API_KEY` is set and model is vision-capable
+3. **PDF errors**: Install `pdf2image` and poppler (Windows: download separately)
+4. **CUDA errors**: Ensure CUDA 12.1 is properly installed (for GPU acceleration)
+5. **Ollama not running**: Start Ollama service before running local OCR
+6. **Import errors**: Activate virtual environment and install dependencies
 
 ## 📝 License
 
 This project is for educational and research purposes.
-
-## 🤝 Contributing
-
-Feel free to submit issues and enhancement requests!
-
----
-
-**Summary**: 
-- **For handwriting**: Use LLM-based OCR (cloud/local) or TrOCR (local, in `ocr_router.py`)
-- **For printed text with columns**: Use Tesseract (in `ocr_router.py` with auto-detection)
-- **For unified solution**: Use `ocr_router.py` - automatically routes to best engine, supports images and PDFs
-- **Surya OCR**: Good for general text but has column reading limitations

@@ -376,6 +376,7 @@ def main() -> None:
 
 	# CSV summary file (if requested)
 	csv_file = None
+	csv_f = None
 	csv_writer = None
 	if args.csv:
 		import csv
@@ -397,10 +398,7 @@ def main() -> None:
 			
 			# Generate output filename
 			file_stem = Path(file_path).stem
-			if is_pdf(file_path):
-				out_file = outdir / f"{file_stem}.pdf.{engine_name}.txt"
-			else:
-				out_file = outdir / f"{file_stem}.{engine_name}.txt"
+			out_file = outdir / f"OCR_{file_stem}.txt"
 			
 			out_file.write_text(text, encoding='utf-8')
 			
