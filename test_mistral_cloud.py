@@ -9,7 +9,7 @@ if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
 # Mistral Cloud Model Configuration
-MISTRAL_MODEL = 'mistral-large-3:675b-cloud'
+MISTRAL_MODEL = "ministral-3:8b"   #'mistral-large-3:675b-cloud'
 
 def get_client():
     """Create and return Ollama Cloud client"""
