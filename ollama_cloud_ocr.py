@@ -694,6 +694,8 @@ if __name__ == "__main__":
     parser.add_argument('--data-type', choices=['receipt', 'form', 'price_tag'],
                        default='receipt', help='Data type for structured extraction')
     parser.add_argument('--show-timing', action='store_true', help='Display performance timing metrics')
+    parser.add_argument('--outdir', default='outputs', help='Directory to write output files (batch mode only)')
+    parser.add_argument('--csv', action='store_true', help='Generate CSV summary file (batch mode only)')
     
     args = parser.parse_args()
     
@@ -791,7 +793,120 @@ if __name__ == "__main__":
                 traceback.print_exc()
         else:
             # Process all files in the project images dir using selected model
-            main(model=selected_model, show_timing=args.show_timing)
+            # Create output directory
+            outdir = Path(args.outdir)
+            outdir.mkdir(parents=True, exist_ok=True)
+            
+            # CSV summary file (if requested)
+            csv_file = None
+            csv_writer = None
+            if args.csv:
+                import csv
+                csv_file = outdir / 'summary.csv'
+                csv_f = csv_file.open('w', newline='', encoding='utf-8')
+                csv_writer = csv.writer(csv_f)
+                csv_writer.writerow(['file', 'mode', 'model', 'chars', 'pages', 'type'])
+            
+            analyzer = CloudOCRAnalyzer(model=selected_model)
+            files = analyzer._collect_project_images()
+            
+            if not files:
+                print("No images or PDFs found in the project's 'images' directory.")
+                sys.exit(0)
+            
+            print(f"\n{'='*60}")
+            print(f"Model: {selected_model}")
+            print(f"Output directory: {outdir}")
+            print(f"{'='*60}\n")
+            
+            for file_path in files:
+                file_name = Path(file_path).name
+                file_stem = Path(file_path).stem
+                is_pdf = analyzer._is_pdf(file_path)
+                
+                try:
+                    if is_pdf:
+                        try:
+                            page_count = analyzer._get_pdf_page_count(file_path)
+                        except Exception as e:
+                            print(f"Warning: Could not determine page count for {file_name}: {e}")
+                            page_count = 1
+                        pages_to_process = range(1, page_count + 1) if args.page is None else [args.page]
+                    else:
+                        pages_to_process = [1]
+                        page_count = 1
+                    
+                    # Process each page
+                    all_page_texts = []
+                    for page_num in pages_to_process:
+                        try:
+                            if args.mode == 'text':
+                                result = analyzer.extract_text(file_path, stream=False,
+                                                              page_number=page_num, track_timing=args.show_timing)
+                            elif args.mode == 'handwriting':
+                                result = analyzer.transcribe_handwriting(file_path, stream=False,
+                                                                        page_number=page_num, track_timing=args.show_timing)
+                            elif args.mode == 'structured':
+                                result = analyzer.extract_structured_data(file_path, args.data_type, stream=False,
+                                                                          page_number=page_num, track_timing=args.show_timing)
+                            elif args.mode == 'document':
+                                result = analyzer.analyze_document(file_path, stream=False,
+                                                                   page_number=page_num, track_timing=args.show_timing)
+                            elif args.mode == 'multi':
+                                # For multi mode, combine all results
+                                results = analyzer.multi_step_analysis(file_path, stream=False,
+                                                                       page_number=page_num, track_timing=args.show_timing)
+                                combined = []
+                                for step, step_result in results.items():
+                                    if 'error' not in step_result:
+                                        combined.append(f"{step.upper()}:\n{step_result.get('content', '')}")
+                                result = {'content': '\n\n'.join(combined)}
+                            else:
+                                result = analyzer.extract_text(file_path, stream=False,
+                                                              page_number=page_num, track_timing=args.show_timing)
+                            
+                            content = result.get('content', '')
+                            
+                            if is_pdf and page_count > 1:
+                                all_page_texts.append(f"\n\n--- Page {page_num} ---\n\n{content}")
+                            else:
+                                all_page_texts.append(content)
+                            
+                        except Exception as e:
+                            error_msg = f"[Error processing page {page_num}: {e}]"
+                            if is_pdf and page_count > 1:
+                                all_page_texts.append(f"\n\n--- Page {page_num} ---\n\n{error_msg}")
+                            else:
+                                all_page_texts.append(error_msg)
+                    
+                    # Combine all pages
+                    combined_text = ''.join(all_page_texts).strip()
+                    
+                    # Write output file
+                    if is_pdf:
+                        out_file = outdir / f"{file_stem}.pdf.{args.mode}.txt"
+                    else:
+                        out_file = outdir / f"{file_stem}.{args.mode}.txt"
+                    
+                    out_file.write_text(combined_text, encoding='utf-8')
+                    
+                    # Write to CSV if requested
+                    if csv_writer:
+                        file_type = "PDF" if is_pdf else "Image"
+                        csv_writer.writerow([file_path, args.mode, selected_model, len(combined_text), page_count, file_type])
+                    
+                    file_type = "PDF" if is_pdf else "Image"
+                    print(f"[{args.mode}] {file_name} -> {out_file.name} ({file_type}, {page_count} page{'s' if page_count > 1 else ''})")
+                    
+                except Exception as e:
+                    print(f"Error processing {file_name}: {e}")
+                    if csv_writer:
+                        csv_writer.writerow([file_path, args.mode, selected_model, 0, 0, 'error'])
+            
+            # Close CSV file if opened
+            if csv_file and csv_f:
+                csv_f.close()
+                print(f"\nCSV summary saved to: {csv_file}")
             
     except ValueError as e:
         print(f"Configuration error: {e}")
